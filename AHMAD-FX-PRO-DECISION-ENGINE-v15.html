@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AHMAD FX PRO AI — Decision Engine v2</title>
+<style>
+:root{--bg:#08111f;--panel:#101d30;--panel2:#0c1728;--line:#22344d;--text:#eaf2ff;--muted:#9bb0ca;--green:#27d69a;--red:#ff6b75;--yellow:#ffd166;--blue:#6ea8ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#152945 0,#08111f 48%);color:var(--text);font:15px/1.45 Arial,sans-serif}
+.wrap{max-width:1120px;margin:auto;padding:22px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.brand{font-size:24px;font-weight:800;letter-spacing:.5px}.brand span{color:var(--green)}.sub{color:var(--muted);font-size:12px;margin-top:3px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:1.7fr 1fr;gap:14px}.card{background:linear-gradient(180deg,#122139,#0d192b);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 12px 30px #0003}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.pair{font-size:19px;font-weight:700}.price{font-size:24px;font-weight:800;margin-top:8px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}
+#chart{width:100%;height:330px;display:block;margin-top:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.stat{background:#0a1525;border:1px solid var(--line);padding:11px;border-radius:12px}.stat b{display:block;font-size:16px;margin-top:4px}
+.signal{margin-top:14px;border-radius:14px;padding:17px;background:#101d30;border:1px solid var(--line)}.signal h2{margin:0 0 7px;font-size:14px;color:var(--muted)}.signalword{font-size:28px;font-weight:900;letter-spacing:1px}.signalword.wait{color:var(--yellow)}.signalword.call{color:var(--green)}.signalword.put{color:var(--red)}
+.reason{color:#c5d4e8;margin-top:8px;font-size:13px}.row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+button,select{font:inherit}button{background:var(--green);border:0;color:#062016;font-weight:800;border-radius:10px;padding:11px 15px;cursor:pointer}button.secondary{background:#1a2c45;color:var(--text);border:1px solid var(--line)}
+select{background:#0a1525;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:105px} .settings{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}.setting{display:flex;flex-direction:column;gap:5px}.setting label{font-size:12px;color:var(--muted)}
+.notice{margin-top:14px;background:#2a2112;border:1px solid #6b5120;color:#ffe4a3;padding:13px;border-radius:12px;font-size:12px}
+.footer{margin:16px 2px;color:var(--muted);font-size:11px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.wrap{padding:13px}#chart{height:260px}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top">
+  <div><div class="brand">AHMAD <span>FX PRO</span></div><div class="sub">Decision Engine v2 · Multi-filter analysis · Roman Urdu · Read-only</div></div>
+  <div class="pill" id="connection">● Connecting to public data…</div>
+ </div>
+ <div class="grid">
+  <section class="card">
+   <div class="head"><div><div class="pair">EUR/USD · Spot Forex</div><div class="small">Public market feed · NOT Quotex OTC</div></div><div class="pill" id="tfBadge">Candle: 1 minute</div></div>
+   <div class="settings">
+    <div class="setting"><label for="timeframe">Candle timeframe</label><select id="timeframe"><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option></select></div>
+    <div class="setting"><label for="expirySelect">Trade expiry idea</label><select id="expirySelect"><option value="1m" selected>1 minute</option></select></div>
+   </div>
+   <div class="price" id="price">--</div><div class="small" id="change">Rate load ho raha hai…</div>
+   <canvas id="chart" aria-label="EUR USD one minute candlestick chart"></canvas>
+   <div class="stats">
+    <div class="stat"><span class="small">EMA 9</span><b id="ema9">--</b></div>
+    <div class="stat"><span class="small">EMA 21</span><b id="ema21">--</b></div>
+    <div class="stat"><span class="small">RSI 14</span><b id="rsi">--</b></div>
+   </div>
+  </section>
+  <aside class="card">
+   <div class="head"><b>AHMAD FX AI · Decision Engine v2</b><span class="pill">Auto refresh</span></div>
+   <div class="signal">
+    <h2>LIVE SETUP · BREAKOUT CONFIRMATION</h2><div class="signalword wait" id="signal">NO TRADE</div>
+    <div class="reason" id="reason">Market data load ho raha hai. Abhi entry na lein.</div>
+    <div class="reason" id="signalSettings" style="margin-top:9px;padding-top:8px;border-top:1px solid var(--line)">Candle: 1 minute · Expiry: 1 minute</div>
+     <div class="reason" id="entryPlan" style="margin-top:8px;font-weight:700">Entry instruction: wait for analysis.</div>
+    <div class="reason" id="triggerInfo" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Entry trigger: candle confirmation ka intezar.</div>
+    <div class="reason" id="qualityScore" style="font-weight:800;color:var(--blue)">Setup checks: --/6</div>
+   </div>
+   <div class="signal" style="margin-top:12px">
+    <h2>MARKET DIRECTION · TREND STATUS</h2>
+    <div class="signalword wait" id="marketBias" style="font-size:20px">CHECKING…</div>
+    <div class="reason" id="setupWatch">Trend aur momentum ka jaiza liya ja raha hai.</div>
+    <div class="reason">Note: Bias sirf market ka rukh batata hai; CALL/PUT entry signal nahi.</div>
+   </div>
+   <div class="signal" style="margin-top:12px">
+    <h2>DECISION ENGINE · FORWARD TEST RESULTS</h2>
+    <div class="stats">
+      <div class="stat"><span class="small">Tested</span><b id="testedCount">0</b></div>
+      <div class="stat"><span class="small">Correct</span><b id="correctCount">0</b></div>
+      <div class="stat"><span class="small">Accuracy</span><b id="accuracyRate">Not proven</b></div>
+    </div>
+    <div class="reason" id="testStatus">Research mode: signal results will be recorded locally after the 1-minute horizon. No verified accuracy yet.</div>
+    <button class="secondary" id="exportResults" style="margin-top:10px">Export test results (CSV)</button>
+    <button class="secondary" id="clearResults" style="margin-top:10px">Reset test history</button>
+  </div>
+  <div class="signal" style="margin-top:12px">
+    <h2>🎙️ Voice Assistant — bol kar sawal karein</h2>
+    <div class="small">Misal: “Price upar jayegi ya neeche?” ya “Abhi trend kya hai?”</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+     <button id="voiceAlerts" class="secondary">🔔 Enable voice alerts</button>
+     <button id="askVoice">🎙️ Bol kar poochhein</button>
+     <button class="secondary" id="speakAnswer">🔊 Jawab sunayein</button>
+    </div>
+    <div class="reason" id="voiceStatus" aria-live="polite">Mic button dabayein aur apna sawal bol dein. Naye confirmed signal ki awaaz ke liye Enable voice alerts dabayein.</div>
+    <div class="reason" id="voiceAnswer">Aapka jawab yahan nazar aayega.</div>
+   </div>
+   <div style="margin-top:14px">
+    <div class="row"><span class="muted">Pair</span><b>EUR/USD</b></div>
+    <div class="row"><span class="muted">Chart timeframe</span><b id="chartTimeframe">1 minute</b></div>
+    <div class="row"><span class="muted">Expiry idea</span><b id="expiry">1 minute (research setting)</b></div>
+    <div class="row"><span class="muted">Analysis speed</span><b>5-sec polling · provider dependent</b></div>
+    <div class="row"><span class="muted">Data freshness</span><b id="fresh">Checking…</b></div>
+    <div class="row"><span class="muted">Last update</span><b id="updated">--</b></div>
+   </div>
+   <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+    <button id="analyzeNow">⚡ Analyze instantly</button><button class="secondary" id="refresh">Refresh live data</button><button class="secondary" id="pause">Pause</button>
+   </div>
+   <div class="notice"><b>Engine status:</b> Ye trained machine-learning AI nahi. Decision Engine v2 rule-based multi-filter system hai: 1m EMA trend, 5m trend, RSI momentum, candle body strength, breakout buffer, spread aur late-entry filter. Har eligible signal ka 1-minute result record hota hai. Data collect aur verify hone ke baad hi ML model train kiya jayega. <br><br><b>Market Direction:</b> Ab bot 1m EMA trend aur 5m trend ko alag check karta hai. Market bias entry signal nahi; final CALL/PUT ke liye breakout aur baqi filters bhi zaroori hain. <br><br><b>Confirmation Edition:</b> CALL/PUT entry tabhi dikhayi jayegi jab trend, pichli mukammal candle, RSI filter aur us candle ke high/low ka breakout align hon. Direction aur entry ko alag rakha gaya hai. Agar price pehle hi door nikal chuki ho to NO TRADE. <br><br><b>EUR/USD one-minute mode:</b> Default candle timeframe aur expiry dono 1 minute hain. <br><br><b>Voice alerts:</b> 'Enable voice alerts' button dabayein. Naye completed candle par CALL/PUT confirmation mile to awaaz ek martaba alert karegi. Browser ka tab khula rehna, sound on hona aur internet connection zaroori hai. Alert ko live trade ki guarantee na samjhein. <br><br><b>How to use:</b> Website par 'Enable voice alerts' ek baar dabayein aur tab khula rakhein. Naya CALL/PUT setup last completed candle aur fresh live quote ke breakout par announce hoga. Alert milne par foran live trade na lagayein; Quotex ke apne EUR/USD chart par price ko confirm karein. Agar move pehle hi ho chuki ho to entry skip karein. <br><br><b>Signal rules:</b> CALL ya PUT tabhi aayega jab 1m aur 5m trend agree karein, breakout confirm ho aur 6 mein se kam az kam 5 checks pass hon. Is wajah se WAIT zyada aa sakta hai; yeh jaan-boojh kar rakha gaya hai taa-ke mixed market mein zabardasti signal na mile. Har signal completed candles par banta hai. <br><br><b>Fast analysis:</b> “Analyze instantly” purane se maujood candles par foran analysis karega; naya live price internet/provider se aane mein waqt le sakta hai. Auto live refresh har 5 seconds mein hota hai taa-ke provider ko bohat zyada requests na bheji jayein. <br><br><b>Voice feature:</b> Mic kaam karne ke liye browser microphone permission maang sakta hai. Voice jawab maujooda indicators par based hoga; yeh future ka exact waqt ya price predict nahi karta. <br><br><b>Important:</b> Ye sirf educational market analysis hai, profit guarantee ya financial advice nahi. Data provider ki candles 1-minute base par hain; 5m/15m chart unhi candles se combine hota hai. Expiry idea is version mein 1 minute hai. Data Quotex se nahi aata, is liye price/timing mein farq ho sakta hai. Data Quotex se nahi aata aur OTC chart se match nahi samjha ja sakta. Koi trade automatically place nahi hoti.</div>
+  </aside>
+ </div>
+ <div class="footer">Research status: This version is NOT a trained or verified machine-learning model. It is a transparent multi-filter rule engine plus automatic 1-minute forward-result logging. Data source: Biquote public API (aggregated public feed), not Quotex. Results are stored in this browser only and may be lost if site data is cleared. Accuracy is not displayed as proven until at least 30 settled samples; even then it is only the observed demo sample, not a guarantee. No broker login, no auto-trading.</div>
+</div>
+<script>
+const API='https://biquote.io/api';
+let bars=[], timer=null, paused=false, lastTick=null, selectedTf=1, selectedExpiry='1m', lastVoiceAnswer='';
+let voiceAlertsEnabled=false, initialAnalysisDone=false, lastAnnouncedCandle='';
+const JOURNAL_KEY='ahmad_fx_pro_forward_test_v15';
+let journal=JSON.parse(localStorage.getItem(JOURNAL_KEY)||'[]');
+let lastJournalKey='';
+const $=id=>document.getElementById(id);
+function fmt(v){return Number(v).toFixed(5)}
+function ema(values,period){if(values.length<period)return null;let k=2/(period+1),e=values.slice(0,period).reduce((a,b)=>a+b,0)/period;for(let i=period;i<values.length;i++)e=values[i]*k+e*(1-k);return e}
+function rsi(values,p=14){if(values.length<=p)return null;let up=0,dn=0;for(let i=values.length-p;i<values.length;i++){let d=values[i]-values[i-1];if(d>0)up+=d;else dn-=d}let ag=up/p,al=dn/p;if(al===0)return 100;return 100-(100/(1+ag/al))}
+function buildDisplayBars(){
+ if(selectedTf===1)return bars;
+ const out=[], step=selectedTf*60*1000;
+ for(const b of bars){
+  const t=Date.parse(b.openTime); if(!Number.isFinite(t))continue;
+  const bucket=Math.floor(t/step)*step, key=String(bucket);
+  let item=out.find(x=>x._bucket===key);
+  if(!item)out.push({_bucket:key,openTime:new Date(bucket).toISOString(),open:b.open,high:b.high,low:b.low,close:b.close});
+  else {item.high=Math.max(item.high,b.high);item.low=Math.min(item.low,b.low);item.close=b.close;}
+ }
+ return out;
+}
+function draw(){
+ const c=$('chart'),ctx=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+ if(!bars.length){ctx.fillStyle='#9bb0ca';ctx.fillText('Candles load ho rahi hain…',20,30);return}
+ const data=buildDisplayBars().slice(-55),lo=Math.min(...data.map(x=>x.low)),hi=Math.max(...data.map(x=>x.high)),pad=(hi-lo)*.12||.0001,min=lo-pad,max=hi+pad;
+ const y=v=>h-18-(v-min)/(max-min)*(h-36),step=w/data.length,cw=Math.max(3,step*.52);
+ ctx.strokeStyle='#20334c';ctx.lineWidth=1;for(let i=1;i<5;i++){let yy=h*i/5;ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(w,yy);ctx.stroke()}
+ data.forEach((b,i)=>{let x=i*step+step/2,up=b.close>=b.open,col=up?'#27d69a':'#ff6b75';ctx.strokeStyle=col;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y(b.high));ctx.lineTo(x,y(b.low));ctx.stroke();let top=y(Math.max(b.open,b.close)),bot=y(Math.min(b.open,b.close));ctx.fillRect(x-cw/2,top,cw,Math.max(2,bot-top))});
+ ctx.fillStyle='#9bb0ca';ctx.font='11px Arial';ctx.fillText(fmt(max),5,12);ctx.fillText(fmt(min),5,h-4);
+}
+function announceNewSignal(word, candleKey){
+  if(!initialAnalysisDone){
+    initialAnalysisDone=true;
+    lastAnnouncedCandle=candleKey;
+    return;
+  }
+  if(!voiceAlertsEnabled || !candleKey || candleKey===lastAnnouncedCandle) return;
+  lastAnnouncedCandle=candleKey;
+  if(word!=='CALL' && word!=='PUT') return;
+  const message = word==='CALL'
+    ? 'CALL setup confirmation mili hai. Yeh guarantee nahi. Quotex chart par price match karein; mismatch ho to trade skip karein.'
+    : 'PUT setup confirmation mili hai. Yeh guarantee nahi. Quotex chart par price match karein; mismatch ho to trade skip karein.';
+  $('voiceStatus').textContent='Naya '+word+' setup mila — awaaz mein bataya ja raha hai.';
+  if('speechSynthesis' in window){
+    window.speechSynthesis.cancel();
+    const utter=new SpeechSynthesisUtterance(message);
+    utter.lang='hi-IN'; utter.rate=0.95;
+    window.speechSynthesis.speak(utter);
+  } else {
+    $('voiceStatus').textContent='Naya '+word+' setup mila, lekin is browser mein voice playback support nahi.';
+  }
+}
+
+
+function saveJournal(){localStorage.setItem(JOURNAL_KEY,JSON.stringify(journal));renderJournal();}
+function renderJournal(){
+ const done=journal.filter(x=>x.result==='WIN'||x.result==='LOSS');
+ const wins=done.filter(x=>x.result==='WIN').length;
+ $('testedCount').textContent=done.length;
+ $('correctCount').textContent=wins;
+ $('accuracyRate').textContent=done.length>=30?(wins/done.length*100).toFixed(1)+'%':'Not proven';
+ $('testStatus').textContent=done.length<30?'Research mode: '+done.length+' settled predictions. Kam az kam 30 results se pehle accuracy claim nahi hogi.':'Forward-test sample: '+done.length+' settled predictions. Ye historical guarantee nahi; live demo sample hai.';
+}
+function recordSignal(word, candleKey, entry){
+ if(word!=='CALL'&&word!=='PUT')return;
+ const id=candleKey;
+ if(journal.some(x=>x.id===id))return;
+ journal.push({id,signal:word,entry:Number(entry),createdAt:Date.now(),settleAt:Date.now()+60000,result:'PENDING',exit:null});
+ if(journal.length>500)journal=journal.slice(-500);
+ saveJournal();
+}
+function settleJournal(price){
+ let changed=false; const now=Date.now();
+ for(const x of journal){
+  if(x.result==='PENDING'&&now>=x.settleAt){
+   x.exit=Number(price);
+   x.result=(x.signal==='CALL'?x.exit>x.entry:x.exit<x.entry)?'WIN':(x.exit===x.entry?'DRAW':'LOSS');
+   x.settledAt=now; changed=true;
+  }
+ }
+ if(changed)saveJournal();
+}
+function exportJournal(){
+ const rows=[['Signal','Entry','Exit','Result','Created UTC','Settled UTC'],...journal.map(x=>[x.signal,x.entry,x.exit??'',x.result,new Date(x.createdAt).toISOString(),x.settledAt?new Date(x.settledAt).toISOString():''])];
+ const csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='ahmad-fx-pro-forward-test.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function analyse(){
+  // Decision Engine v2: uses completed-candle structure, trend, momentum,
+  // candle strength, higher-timeframe agreement, breakout and anti-chase filters.
+  const allBars=buildDisplayBars();
+  const closedBars=allBars.slice(0,-1);
+  const closes=closedBars.map(b=>Number(b.close)).filter(Number.isFinite);
+  if(closedBars.length<35 || !lastTick){
+    $('marketBias').textContent='DATA COLLECTING';
+    $('setupWatch').textContent='Kam az kam 35 mukammal candles aur fresh quote darkar hain.';
+    $('signal').textContent='WAIT · DATA';$('signal').className='signalword wait';
+    $('reason').textContent='Data abhi kafi nahi. Koi CALL/PUT signal issue nahi hoga.';
+    $('entryPlan').textContent='PLAN: Data complete hone tak trade na lein.';
+    $('triggerInfo').textContent='Entry trigger: fresh data ka intezar.';
+    $('qualityScore').textContent='Setup checks: --/6';
+    $('ema9').textContent='--';$('ema21').textContent='--';$('rsi').textContent='--';
+    return;
+  }
+  const e9=ema(closes,9), e21=ema(closes,21), rv=rsi(closes,14);
+  const prevE21=ema(closes.slice(0,-3),21);
+  const lastBar=closedBars[closedBars.length-1];
+  const live=Number(lastTick.mid);
+  const range=Math.max(0,Number(lastBar.high)-Number(lastBar.low));
+  const body=Math.abs(Number(lastBar.close)-Number(lastBar.open));
+  const bodyRatio=range>0?body/range:0;
+  const candleBull=lastBar.close>lastBar.open && bodyRatio>=0.45;
+  const candleBear=lastBar.close<lastBar.open && bodyRatio>=0.45;
+  const upTrend=e9>e21 && e21>prevE21;
+  const downTrend=e9<e21 && e21<prevE21;
+  // ATR from completed candles; used for breakout buffer and chase rejection.
+  let trSum=0,trCount=0;
+  for(let i=Math.max(1,closedBars.length-14);i<closedBars.length;i++){
+    const b=closedBars[i],p=closedBars[i-1];
+    trSum+=Math.max(b.high-b.low,Math.abs(b.high-p.close),Math.abs(b.low-p.close));trCount++;
+  }
+  const atr=trCount?trSum/trCount:0;
+  const distance=Math.abs(live-e9);
+  const notExtended=atr>0 && distance<=atr*0.70;
+  const buffer=atr*0.05;
+  const callBreak=live>Number(lastBar.high)+buffer;
+  const putBreak=live<Number(lastBar.low)-buffer;
+  // Build a higher-timeframe view from the same public 1m source (not broker data).
+  const htf=[], step=5*60*1000;
+  for(const b of bars){
+    const t=Date.parse(b.openTime);if(!Number.isFinite(t))continue;
+    const bucket=Math.floor(t/step)*step;let z=htf[htf.length-1];
+    if(!z||z.t!==bucket)htf.push({t, bucket,open:b.open,high:b.high,low:b.low,close:b.close});
+    else {z.high=Math.max(z.high,b.high);z.low=Math.min(z.low,b.low);z.close=b.close;}
+  }
+  // Exclude the currently forming 5m bucket.
+  const htfClosed=htf.slice(0,-1).map(x=>Number(x.close));
+  const htfFast=ema(htfClosed,5),htfSlow=ema(htfClosed,13);
+  const htfUp=htfClosed.length>=15&&htfFast>htfSlow;
+  const htfDown=htfClosed.length>=15&&htfFast<htfSlow;
+  const momentumUp=rv>=52&&rv<=66;
+  const momentumDown=rv<=48&&rv>=34;
+  const spread=Number(lastTick.ask)-Number(lastTick.bid);
+  const spreadOK=atr>0&&Number.isFinite(spread)&&spread<=atr*0.18;
+  const callChecks=[upTrend,momentumUp,candleBull,htfUp,notExtended,spreadOK];
+  const putChecks=[downTrend,momentumDown,candleBear,htfDown,notExtended,spreadOK];
+  const callScore=callChecks.filter(Boolean).length;
+  const putScore=putChecks.filter(Boolean).length;
+  // A breakout is mandatory; at least 5 of 6 independent checks must agree.
+  const callReady=upTrend&&callBreak&&callScore>=5;
+  const putReady=downTrend&&putBreak&&putScore>=5;
+  const bullishWatch=upTrend, bearishWatch=downTrend;
+  if(bullishWatch){
+    $('marketBias').textContent='BULLISH · CALL WATCH';$('marketBias').className='signalword call';
+    $('setupWatch').textContent='EMA trend bullish hai. 5m trend, momentum aur candle strength bhi check ho rahe hain. Bias entry signal nahi.';
+  }else if(bearishWatch){
+    $('marketBias').textContent='BEARISH · PUT WATCH';$('marketBias').className='signalword put';
+    $('setupWatch').textContent='EMA trend bearish hai. 5m trend, momentum aur candle strength bhi check ho rahe hain. Bias entry signal nahi.';
+  }else{
+    $('marketBias').textContent='SIDEWAYS / MIXED';$('marketBias').className='signalword wait';
+    $('setupWatch').textContent='EMA trend clear nahi. Mixed market mein direction force nahi ki ja rahi.';
+  }
+  $('ema9').textContent=fmt(e9);$('ema21').textContent=fmt(e21);$('rsi').textContent=rv.toFixed(1);
+  let word='WAIT',why='Abhi tamam zaroori conditions align nahi. Signal force nahi kiya jayega.';
+  if(callReady){word='CALL';why='CALL setup: 1m trend, 5m trend, RSI momentum, strong bullish candle, spread aur anti-chase filters pass; live quote ne pichli completed candle ka high buffer ke sath break kiya.';}
+  else if(putReady){word='PUT';why='PUT setup: 1m trend, 5m trend, RSI momentum, strong bearish candle, spread aur anti-chase filters pass; live quote ne pichli completed candle ka low buffer ke sath break kiya.';}
+  else if(!spreadOK){why='Spread data missing ya ATR ke muqable mein zyada hai. Is waqt entry avoid karein.';}
+  else if(!notExtended){why='Price EMA 9 se zyada door hai. Late entry/chasing risk; pullback ka intezar karein.';}
+  $('signal').textContent=word==='WAIT'?(bullishWatch?'WAIT · CALL WATCH':bearishWatch?'WAIT · PUT WATCH':'WAIT · NO ENTRY'):word;
+  $('signal').className='signalword '+(word==='WAIT'?'wait':word.toLowerCase());
+  $('reason').textContent=why+' Ye rule-based estimate hai, verified AI ya guarantee nahi.';
+  $('entryPlan').textContent=word==='CALL'
+    ?'PLAN: Sirf demo par observe karein. Quotex EUR/USD Normal candle aur price public feed se match na kare to skip.'
+    :word==='PUT'
+    ?'PLAN: Sirf demo par observe karein. Quotex EUR/USD Normal candle aur price public feed se match na kare to skip.'
+    :bullishWatch?'PLAN: Bullish bias hai, CALL entry abhi confirm nahi. Nayi candle aur breakout ka wait karein.'
+    :bearishWatch?'PLAN: Bearish bias hai, PUT entry abhi confirm nahi. Nayi candle aur breakout ka wait karein.'
+    :'PLAN: Clear direction nahi. WAIT; koi trade zaroori nahi.';
+  $('triggerInfo').textContent='Live '+fmt(live)+' · Previous high '+fmt(lastBar.high)+' · low '+fmt(lastBar.low)+' · breakout buffer '+fmt(buffer)+' · spread '+fmt(spread);
+  $('qualityScore').textContent='Setup checks: CALL '+callScore+'/6 · PUT '+putScore+'/6 · Breakout '+(callBreak?'CALL':putBreak?'PUT':'not confirmed');
+  $('expiry').textContent='1 minute (research setting)';
+  const key=String(lastBar.openTime);
+  if(word==='CALL'||word==='PUT')recordSignal(word,key,live);
+  announceNewSignal(word,key+'-'+word);
+}
+function expiryLabel(v){return ({'5s':'5 seconds','15s':'15 seconds','30s':'30 seconds','1m':'1 minute','5m':'5 minutes'})[v]||v}
+function makeVoiceAnswer(question=''){
+ const sig=$('signal').textContent, why=$('reason').textContent;
+ const fresh=$('fresh').textContent;
+ const candleText=selectedTf+' minute'+(selectedTf===1?'':'s');
+ const expiryText=expiryLabel(selectedExpiry);
+ const settingsText=' Aapki selected candle timeframe '+candleText+' hai aur selected expiry '+expiryText+' hai.';
+
+ if(!bars.length || fresh==='Unavailable' || sig==='WAIT'){
+  return 'Abhi data mukammal ya fresh nahi hai, is liye main upar ya neeche ka andaza nahi dunga. Thori dair baad dobara poochhein.'+settingsText;
+ }
+ if(sig==='CALL'){
+  return 'Filhal indicators ke mutabiq trend upar ki taraf, yani bullish hai. EMA 9, EMA 21 se upar hai. Lekin price kab upar jayegi ya kitni door jayegi, exact waqt batana mumkin nahi. Agli candles se tasdeeq karein. '+settingsText+' '+why;
+ }
+ if(sig==='PUT'){
+  return 'Filhal indicators ke mutabiq trend neeche ki taraf, yani bearish hai. EMA 9, EMA 21 se neeche hai. Lekin price kab neeche jayegi ya kitni door jayegi, exact waqt batana mumkin nahi. Agli candles se tasdeeq karein. '+settingsText+' '+why;
+ }
+ return 'Filhal market ka rukh clear nahi. Behtar hai WAIT karein aur agli candles ka intezar karein. Main exact future price ya waqt predict nahi kar sakta.'+settingsText;
+}
+function showVoiceAnswer(question=''){
+ if(bars.length){draw();analyse();}
+ const answer=makeVoiceAnswer(question);
+ lastVoiceAnswer=answer;
+ $('voiceAnswer').textContent='Jawab: '+answer;
+ return answer;
+}
+function speak(text){
+ if(!('speechSynthesis' in window)){ $('voiceStatus').textContent='Is browser mein voice playback support nahi hai.'; return; }
+ window.speechSynthesis.cancel();
+ const utter=new SpeechSynthesisUtterance(text);
+ utter.lang='hi-IN'; utter.rate=0.92;
+ window.speechSynthesis.speak(utter);
+}
+function updateSettings(){
+ $('tfBadge').textContent='Candle: '+selectedTf+' minute'+(selectedTf===1?'':'s');
+ $('chartTimeframe').textContent=selectedTf+' minute'+(selectedTf===1?'':'s');
+ $('expiry').textContent=expiryLabel(selectedExpiry)+' (sirf educational idea)';
+ $('signalSettings').textContent='Selected candle timeframe: '+selectedTf+' minute'+(selectedTf===1?'':'s')+' · Selected expiry: '+expiryLabel(selectedExpiry);
+ draw();analyse();
+}
+async function load(){
+ if(paused)return;
+ // Pehle se loaded candles par foran analysis; network update background mein hota hai.
+ if(bars.length){draw();analyse();$('connection').textContent='● Updating live data…';}
+ try{
+  const [tRes,bRes]=await Promise.all([fetch(API+'/EURUSD?allowStale=false',{cache:'no-store'}),fetch(API+'/EURUSD/ohlc?interval=1m&limit=100',{cache:'no-store'})]);
+  if(!tRes.ok)throw new Error('Live quote unavailable ('+tRes.status+')');
+  if(!bRes.ok)throw new Error('Candles unavailable ('+bRes.status+')');
+  const t=await tRes.json(),d=await bRes.json();
+  if(t.marketState==='closed'||t.stale||t.quoteAgeSeconds>90)throw new Error('Market band ya data purana hai. Live signal nahi diya ja raha.');
+  lastTick=t;settleJournal(t.mid);bars=(d.bars||[]).filter(b=>Number.isFinite(Number(b.open))&&Number.isFinite(Number(b.close))).map(b=>({...b,open:+b.open,high:+b.high,low:+b.low,close:+b.close})).sort((a,b)=>Date.parse(a.openTime)-Date.parse(b.openTime));
+  $('price').textContent=fmt(t.mid);$('change').textContent='Bid '+fmt(t.bid)+' · Ask '+fmt(t.ask)+' · '+(t.dayDiffPercent>=0?'+':'')+Number(t.dayDiffPercent).toFixed(2)+'% today';
+  $('connection').textContent='● Live public feed connected';$('connection').style.color='var(--green)';
+  $('fresh').textContent='Fresh · '+Math.round(t.quoteAgeSeconds)+' sec';$('updated').textContent=new Date(t.timestamp).toLocaleTimeString();
+  draw();analyse();
+ }catch(e){$('connection').textContent='● Data unavailable';$('connection').style.color='var(--red)';$('fresh').textContent='Unavailable';$('signal').textContent='WAIT';$('signal').className='signalword wait';$('reason').textContent=e.message+' Is waqt koi signal nahi diya ja raha.';$('entryPlan').textContent='PLAN: Data unavailable — trade na lein.';$('triggerInfo').textContent='Entry trigger: fresh data unavailable.'}
+}
+function start(){if(timer)clearInterval(timer);load();timer=setInterval(load,5000)}
+$('analyzeNow').onclick=()=>{
+ if(!bars.length){$('reason').textContent='Pehle live candles ka initial data load hone dein.';load();return;}
+ draw();analyse();
+ $('voiceStatus').textContent='Analysis maujooda candles par foran update kar di gayi.';
+};
+$('refresh').onclick=load;
+$('askVoice').onclick=()=>{
+ const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SpeechRecognition){$('voiceStatus').textContent='Aapke browser mein voice recognition available nahi. Chrome update karein ya text sawal ka option use karein.';return;}
+ const recognition=new SpeechRecognition();
+ recognition.lang='hi-IN';recognition.interimResults=false;recognition.maxAlternatives=1;
+ $('voiceStatus').textContent='Sun raha hoon… ab apna sawal boliye.';
+ recognition.onresult=event=>{
+  const question=event.results[0][0].transcript;
+  $('voiceStatus').textContent='Aapka sawal: '+question;
+  const answer=showVoiceAnswer(question);
+  speak(answer);
+ };
+ recognition.onerror=event=>{$('voiceStatus').textContent='Mic issue: '+event.error+'. Chrome mein microphone permission Allow karein.';};
+ recognition.onend=()=>{};
+ try{recognition.start();}catch(err){$('voiceStatus').textContent='Mic start nahi hua. Dobara button dabayein.';}
+};
+$('speakAnswer').onclick=()=>{if(!lastVoiceAnswer)showVoiceAnswer();speak(lastVoiceAnswer);};
+$('voiceAlerts').onclick=()=>{
+  voiceAlertsEnabled=!voiceAlertsEnabled;
+  $('voiceAlerts').textContent=voiceAlertsEnabled?'🔔 Voice alerts ON':'🔔 Enable voice alerts';
+  $('voiceStatus').textContent=voiceAlertsEnabled
+    ? 'Voice alerts ON. Nayi completed candle par CALL/PUT mila to ek martaba awaaz aayegi.'
+    : 'Voice alerts OFF.';
+  if(voiceAlertsEnabled && 'speechSynthesis' in window){
+    const test=new SpeechSynthesisUtterance('Voice alerts on.');
+    test.lang='hi-IN'; window.speechSynthesis.speak(test);
+  }
+};
+$('timeframe').onchange=e=>{selectedTf=Number(e.target.value);updateSettings();};
+$('expirySelect').onchange=e=>{selectedExpiry=e.target.value;updateSettings();};
+$('exportResults').onclick=exportJournal;
+$('clearResults').onclick=()=>{if(confirm('Kya aap apni local test history reset karna chahte hain?')){journal=[];saveJournal();}};
+renderJournal();
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause';if(!paused)load()};
+window.addEventListener('resize',draw);updateSettings();start();
+</script>
+</body>
+</html>
